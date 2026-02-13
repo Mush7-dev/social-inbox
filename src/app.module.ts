@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { SocialMessageModule } from './modules/social-message/social-message.module';
 import { GmailModule } from './modules/gmail/gmail.module';
 import { FacebookWebhookModule } from './modules/facebook-webhook/facebook-webhook.module';
+import { SocialPermissionsModule } from './modules/social-permissions/social-permissions.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { FacebookWebhookModule } from './modules/facebook-webhook/facebook-webho
     SocialMessageModule,
     GmailModule,
     FacebookWebhookModule,
+    SocialPermissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

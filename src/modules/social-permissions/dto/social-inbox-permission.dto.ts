@@ -5,52 +5,43 @@ import {
   IsEnum,
   IsArray,
   IsBoolean,
-  IsUUID,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   SocialPlatform,
   SocialInboxPermissionType,
-  SocialInboxAccessType,
 } from '../../../common/enums/social-platform.enum';
 
-export class CreateSocialInboxPermissionDto {
-  @ApiProperty({ enum: SocialInboxAccessType })
-  @IsEnum(SocialInboxAccessType)
-  accessType: SocialInboxAccessType;
-
-  @ApiProperty()
-  @IsUUID()
-  accessId: string;
+export class PlatformPermissionDto {
+  @ApiProperty({ enum: SocialPlatform })
+  @IsEnum(SocialPlatform)
+  platform: SocialPlatform;
 
   @ApiProperty({ enum: SocialInboxPermissionType })
   @IsEnum(SocialInboxPermissionType)
-  permissionType: SocialInboxPermissionType;
+  type: SocialInboxPermissionType;
+}
 
-  @ApiPropertyOptional({
-    enum: SocialPlatform,
-    isArray: true,
-    default: ['facebook', 'instagram', 'whatsapp', 'gmail'],
-  })
-  @IsOptional()
+export class CreateSocialInboxPermissionDto {
+  @ApiProperty()
+  @IsString()
+  userId: string;
+
+  @ApiProperty({ type: [PlatformPermissionDto] })
   @IsArray()
-  @IsEnum(SocialPlatform, { each: true })
-  platforms?: SocialPlatform[];
+  @ValidateNested({ each: true })
+  @Type(() => PlatformPermissionDto)
+  permissions: PlatformPermissionDto[];
 }
 
 export class UpdateSocialInboxPermissionDto {
-  @ApiPropertyOptional({ enum: SocialInboxPermissionType })
-  @IsOptional()
-  @IsEnum(SocialInboxPermissionType)
-  permissionType?: SocialInboxPermissionType;
-
-  @ApiPropertyOptional({
-    enum: SocialPlatform,
-    isArray: true,
-  })
+  @ApiPropertyOptional({ type: [PlatformPermissionDto] })
   @IsOptional()
   @IsArray()
-  @IsEnum(SocialPlatform, { each: true })
-  platforms?: SocialPlatform[];
+  @ValidateNested({ each: true })
+  @Type(() => PlatformPermissionDto)
+  permissions?: PlatformPermissionDto[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -62,20 +53,11 @@ export class SocialInboxPermissionResponseDto {
   @ApiProperty()
   _id: string;
 
-  @ApiProperty({ enum: SocialInboxAccessType })
-  accessType: SocialInboxAccessType;
-
   @ApiProperty()
-  accessId: string;
+  userId: string;
 
-  @ApiProperty()
-  accessName: string; // Name of user/team/role
-
-  @ApiProperty({ enum: SocialInboxPermissionType })
-  permissionType: SocialInboxPermissionType;
-
-  @ApiProperty({ enum: SocialPlatform, isArray: true })
-  platforms: SocialPlatform[];
+  @ApiProperty({ type: [PlatformPermissionDto] })
+  permissions: PlatformPermissionDto[];
 
   @ApiProperty()
   isActive: boolean;
@@ -84,25 +66,5 @@ export class SocialInboxPermissionResponseDto {
   createdAt: Date;
 
   @ApiProperty()
-  createdByName?: string;
-}
-
-export class AssignableEntityDto {
-  @ApiProperty()
-  _id: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty({ enum: SocialInboxAccessType })
-  type: SocialInboxAccessType;
-
-  @ApiPropertyOptional()
-  hasAccess?: boolean;
-
-  @ApiPropertyOptional({ enum: SocialInboxPermissionType })
-  permissionType?: SocialInboxPermissionType;
-
-  @ApiPropertyOptional({ enum: SocialPlatform, isArray: true })
-  platforms?: SocialPlatform[];
+  updatedAt: Date;
 }
