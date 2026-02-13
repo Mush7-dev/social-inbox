@@ -128,7 +128,7 @@ export class GmailService implements OnModuleInit {
       const listResponse = await this.gmail.users.messages.list({
         userId: 'me',
         maxResults,
-        q: 'in:inbox is:unread', // Only fetch unread emails in inbox
+        q: 'in:inbox is:unread',
       });
 
       const messages = listResponse.data.messages || [];

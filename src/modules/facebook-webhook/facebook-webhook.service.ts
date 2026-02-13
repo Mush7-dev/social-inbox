@@ -4,6 +4,14 @@ import { SocialInboxService } from '../social-message/social-inbox.service';
 import { SocialPlatform } from '../../common/enums/social-platform.enum';
 import { CreateMessageDto } from '../social-message/dto/social-inbox.dto';
 
+interface FacebookUserProfile {
+  id: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  profile_pic?: string;
+}
+
 @Injectable()
 export class FacebookWebhookService {
   private readonly logger = new Logger(FacebookWebhookService.name);
@@ -13,9 +21,38 @@ export class FacebookWebhookService {
     private readonly configService: ConfigService,
   ) {}
 
+  // Fetch user profile from Facebook Graph API
+  private async fetchUserProfile(
+    userId: string,
+  ): Promise<FacebookUserProfile | null> {
+    console.log(`Fetching profile for user ID: ${userId}`);
+    try {
+      const accessToken = this.configService.get<string>('FACEBOOK_APP_ID');
+      if (!accessToken) {
+        this.logger.warn('FACEBOOK_PAGE_ACCESS_TOKEN not configured');
+        return null;
+      }
+
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${userId}?fields=id,first_name,last_name,name,profile_pic&access_token=${accessToken}`,
+      );
+      if (!response.ok) {
+        this.logger.warn(
+          `Failed to fetch profile for user ${userId}: ${response.status}`,
+        );
+        return null;
+      }
+
+      const profile = (await response.json()) as FacebookUserProfile;
+      return profile;
+    } catch (error) {
+      this.logger.error(`Error fetching user profile: ${error.message}`);
+      return null;
+    }
+  }
+
   // Verify webhook subscription
   verifyWebhook(mode: string, challenge: string, verifyToken: string): string {
-    console.log(mode, challenge, verifyToken);
     const expectedToken = this.configService.get<string>(
       'FACEBOOK_VERIFY_TOKEN',
     );
@@ -78,20 +115,20 @@ export class FacebookWebhookService {
       // Determine platform based on source
       const platform = SocialPlatform.FACEBOOK; // Could be INSTAGRAM based on source
 
+      // Fetch sender profile from Facebook Graph API
+      const senderProfile = await this.fetchUserProfile(senderId);
+      console.log('Fetched sender profile:', senderProfile);
       // Create message DTO with nested participant objects
       const createMessageDto: CreateMessageDto = {
         platform,
         sender: {
           id: senderId,
-          name: messagingEvent.sender?.name,
-          surname: messagingEvent.sender?.surname,
-          avatar: messagingEvent.sender?.profile_pic,
+          name: senderProfile?.first_name || senderProfile?.name,
+          surname: senderProfile?.last_name,
+          avatar: senderProfile?.profile_pic,
         },
         recipient: {
           id: recipientId,
-          name: messagingEvent.recipient?.name,
-          surname: messagingEvent.recipient?.surname,
-          avatar: messagingEvent.recipient?.profile_pic,
         },
         messageText: messageData.text,
         messageId: messageData.mid,

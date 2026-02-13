@@ -182,7 +182,7 @@ export class SocialInboxService {
 
   // Create a new incoming message
   async createMessage(dto: CreateMessageDto): Promise<SocialMessageDocument> {
-    this.logger.log(`Creating message with DTO: ${JSON.stringify(dto)}`);
+    // this.logger.log(`Creating message with DTO: ${JSON.stringify(dto)}`);
 
     const message = new this.messageModel({
       ...dto,
