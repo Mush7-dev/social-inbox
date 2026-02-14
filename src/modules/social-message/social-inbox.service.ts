@@ -14,6 +14,7 @@ import {
 import {
   SocialPlatform,
   MessageDirection,
+  PLATFORM_CONFIG,
 } from '../../common/enums/social-platform.enum';
 import { SocialInboxGateway } from './social-inbox.gateway';
 import {
@@ -56,6 +57,7 @@ export class SocialInboxService {
       result.push({
         id: platform,
         name: this.platformNames[platform],
+        color: PLATFORM_CONFIG[platform].color,
         unreadCount,
       });
     }

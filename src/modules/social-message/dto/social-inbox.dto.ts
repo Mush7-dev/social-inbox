@@ -31,13 +31,19 @@ export class ParticipantDto {
 }
 
 export class PlatformResponseDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Platform identifier', example: 'facebook' })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Platform display name', example: 'Facebook' })
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Platform brand color (hex code)',
+    example: '#3B82F6',
+  })
+  color: string;
+
+  @ApiProperty({ description: 'Number of unread messages', example: 5 })
   unreadCount: number;
 }
 
