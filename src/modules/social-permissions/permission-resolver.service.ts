@@ -31,6 +31,9 @@ export interface ResolvedPermission {
 export class PermissionResolverService {
   private readonly logger = new Logger(PermissionResolverService.name);
 
+  // Roles that always have full access to all platforms
+  private readonly ADMIN_ROLES = ['Super Admin', 'General Manager'];
+
   constructor(
     @InjectModel(SocialInboxPermission.name)
     private permissionModel: Model<SocialInboxPermissionDocument>,
@@ -38,7 +41,7 @@ export class PermissionResolverService {
 
   /**
    * Resolves effective permissions for a user across all platforms
-   * Priority: Individual > Team > Role
+   * Priority: Super Admin/General Manager (auto-grant) > Individual > Team > Role
    */
   async getEffectivePermissions(
     userContext: UserContext,
@@ -50,6 +53,14 @@ export class PermissionResolverService {
     this.logger.debug(
       `Resolving permissions for user: ${userId}, teams: ${teamIds}, role: ${userType}`,
     );
+
+    // Auto-grant full access for Super Admin and General Manager
+    if (userType && this.ADMIN_ROLES.includes(userType)) {
+      this.logger.debug(
+        `User has admin role (${userType}), granting full access to all platforms`,
+      );
+      return this.getFullAccessPermissions(userType);
+    }
 
     // Fetch all relevant permissions in parallel
     const [individualPerms, teamPerms, rolePerms] = await Promise.all([
@@ -90,6 +101,16 @@ export class PermissionResolverService {
     const userId = userContext._id || userContext.id || '';
     const teamIds = userContext.teamIds || [];
     const userType = userContext.userType;
+
+    // Auto-grant full access for Super Admin and General Manager
+    if (userType && this.ADMIN_ROLES.includes(userType)) {
+      return {
+        platform,
+        type: SocialInboxPermissionType.VIEW_AND_ANSWER,
+        isDenied: false,
+        source: 'role',
+      };
+    }
 
     const [individualPerms, teamPerms, rolePerms] = await Promise.all([
       this.getIndividualPermissions(userId),
@@ -251,5 +272,19 @@ export class PermissionResolverService {
     };
 
     return permissionHierarchy[type1] > permissionHierarchy[type2];
+  }
+
+  /**
+   * Returns full access permissions for all platforms (for Super Admin and General Manager)
+   */
+  private getFullAccessPermissions(roleName: string): ResolvedPermission[] {
+    const allPlatforms = Object.values(SocialPlatform);
+
+    return allPlatforms.map((platform) => ({
+      platform,
+      type: SocialInboxPermissionType.VIEW_AND_ANSWER,
+      isDenied: false,
+      source: 'role' as const,
+    }));
   }
 }
