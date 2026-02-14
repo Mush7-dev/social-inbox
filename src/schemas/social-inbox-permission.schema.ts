@@ -47,7 +47,7 @@ export class SocialInboxPermission {
   @Prop({ required: true, index: true })
   targetId: string;
 
-  @Prop({ index: true })
+  @Prop({ index: true, sparse: true })
   userId?: string;
 
   @Prop({ type: [PlatformPermissionSchema], default: [] })
