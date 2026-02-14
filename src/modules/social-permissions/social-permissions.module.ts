@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { HttpModule } from '@nestjs/axios';
 import { SocialPermissionsController } from './social-permissions.controller';
 import { SocialPermissionsService } from './social-permissions.service';
+import { PermissionResolverService } from './permission-resolver.service';
 import {
   SocialInboxPermission,
   SocialInboxPermissionSchema,
@@ -18,7 +19,12 @@ import { AdminGuard } from '../../common/guards/admin.guard';
     HttpModule,
   ],
   controllers: [SocialPermissionsController],
-  providers: [SocialPermissionsService, AuthGuard, AdminGuard],
-  exports: [SocialPermissionsService],
+  providers: [
+    SocialPermissionsService,
+    PermissionResolverService,
+    AuthGuard,
+    AdminGuard,
+  ],
+  exports: [SocialPermissionsService, PermissionResolverService],
 })
 export class SocialPermissionsModule {}

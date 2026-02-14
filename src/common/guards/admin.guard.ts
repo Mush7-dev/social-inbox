@@ -7,14 +7,11 @@ import {
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  private readonly allowedUserTypes = ['General manager', 'Super Admin'];
+  private readonly allowedUserTypes = ['General Manager', 'Super Admin'];
 
   canActivate(context: ExecutionContext): boolean {
-    console.log('dsknf');
-
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    console.log(user);
     if (!user) {
       throw new ForbiddenException('User not found');
     }

@@ -3,6 +3,7 @@ import { Document } from 'mongoose';
 import {
   SocialPlatform,
   SocialInboxPermissionType,
+  SocialInboxAccessType,
 } from '../common/enums/social-platform.enum';
 
 export type SocialInboxPermissionDocument = SocialInboxPermission & Document;
@@ -21,6 +22,11 @@ export class PlatformPermission {
     default: SocialInboxPermissionType.VIEW_ONLY,
   })
   type: SocialInboxPermissionType;
+
+  @Prop({
+    default: false,
+  })
+  isDenied: boolean;
 }
 
 export const PlatformPermissionSchema =
@@ -31,8 +37,18 @@ export const PlatformPermissionSchema =
   collection: 'social_inbox_permissions',
 })
 export class SocialInboxPermission {
-  @Prop({ required: true, unique: true, index: true })
-  userId: string;
+  @Prop({
+    required: true,
+    enum: SocialInboxAccessType,
+    default: SocialInboxAccessType.USER,
+  })
+  accessType: SocialInboxAccessType;
+
+  @Prop({ required: true, index: true })
+  targetId: string;
+
+  @Prop({ index: true })
+  userId?: string;
 
   @Prop({ type: [PlatformPermissionSchema], default: [] })
   permissions: PlatformPermission[];
@@ -53,3 +69,6 @@ export class SocialInboxPermission {
 export const SocialInboxPermissionSchema = SchemaFactory.createForClass(
   SocialInboxPermission,
 );
+
+// Compound index for efficient queries
+SocialInboxPermissionSchema.index({ accessType: 1, targetId: 1 });
