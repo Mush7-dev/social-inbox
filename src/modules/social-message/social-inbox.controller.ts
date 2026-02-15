@@ -27,6 +27,7 @@ import {
   SendMessageDto,
   SendMessageResponseDto,
 } from './dto/social-inbox.dto';
+import { GetExternalUsersResponseDto } from './dto/external-user.dto';
 
 @ApiTags('Social Inbox')
 @Controller('social')
@@ -67,6 +68,51 @@ export class SocialInboxController {
     @Query('offset') offset?: number,
   ): Promise<{ conversations: ConversationResponseDto[]; total: number }> {
     return this.socialInboxService.getConversations(
+      platform,
+      limit || 50,
+      offset || 0,
+    );
+  }
+
+  @Get('users')
+  @ApiOperation({
+    summary: 'Get external users (customers)',
+    description:
+      'Returns list of external users who have sent messages, filtered by platform permissions.',
+  })
+  @ApiQuery({
+    name: 'platform',
+    enum: SocialPlatform,
+    required: false,
+    description: 'Filter by specific platform (optional)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of results (default: 50)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Pagination offset (default: 0)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Users retrieved successfully',
+    type: GetExternalUsersResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'No access to specified platform',
+  })
+  async getExternalUsers(
+    @Query('platform') platform?: SocialPlatform,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+    @Req() req?: any,
+  ): Promise<GetExternalUsersResponseDto> {
+    return this.socialInboxService.getExternalUsers(
+      req.user,
       platform,
       limit || 50,
       offset || 0,

@@ -22,6 +22,8 @@ import {
   ConversationResponseDto,
   CreateMessageDto,
 } from './dto/social-inbox.dto';
+import { PermissionResolverService } from '../social-permissions/permission-resolver.service';
+import { GetExternalUsersResponseDto } from './dto/external-user.dto';
 
 @Injectable()
 export class SocialInboxService {
@@ -39,6 +41,7 @@ export class SocialInboxService {
     private readonly messageModel: Model<SocialMessageDocument>,
     @Inject(forwardRef(() => SocialInboxGateway))
     private readonly gateway: SocialInboxGateway,
+    private readonly permissionResolver: PermissionResolverService,
   ) {}
 
   // Get all platforms with unread counts
@@ -318,5 +321,104 @@ export class SocialInboxService {
       isRead: false,
       deletedAt: null,
     });
+  }
+
+  // Get external users (customers) who have conversations
+  async getExternalUsers(
+    userContext: any,
+    platformFilter?: SocialPlatform,
+    limit = 50,
+    offset = 0,
+  ): Promise<GetExternalUsersResponseDto> {
+    // Step 1: Get user's effective permissions
+    const effectivePermissions =
+      await this.permissionResolver.getEffectivePermissions(userContext);
+
+    // Step 2: Get allowed platforms
+    let allowedPlatforms = effectivePermissions
+      .filter((p) => !p.isDenied)
+      .map((p) => p.platform);
+
+    // Step 3: If specific platform requested, validate access
+    if (platformFilter) {
+      if (!allowedPlatforms.includes(platformFilter)) {
+        throw new ForbiddenException(
+          `No access to platform: ${platformFilter}`,
+        );
+      }
+      allowedPlatforms = [platformFilter];
+    }
+
+    // Step 4: If no allowed platforms, return empty
+    if (allowedPlatforms.length === 0) {
+      return { users: [], total: 0 };
+    }
+
+    // Step 5: Aggregate users from messages
+    const users = await this.messageModel.aggregate([
+      {
+        $match: {
+          platform: { $in: allowedPlatforms },
+          deletedAt: null,
+          direction: MessageDirection.INCOMING,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            senderId: '$sender.id',
+            platform: '$platform',
+          },
+          sender: { $first: '$sender' },
+          platform: { $first: '$platform' },
+          lastMessageAt: { $max: '$createdAt' },
+        },
+      },
+      {
+        $sort: { lastMessageAt: -1 },
+      },
+      {
+        $skip: offset,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+
+    // Step 6: Get total count for pagination
+    const totalCount = await this.messageModel.aggregate([
+      {
+        $match: {
+          platform: { $in: allowedPlatforms },
+          deletedAt: null,
+          direction: MessageDirection.INCOMING,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            senderId: '$sender.id',
+            platform: '$platform',
+          },
+        },
+      },
+      {
+        $count: 'total',
+      },
+    ]);
+
+    const total = totalCount[0]?.total || 0;
+
+    // Step 7: Format response
+    const result = users.map((user) => ({
+      id: user.sender.id,
+      name: user.sender.name || undefined,
+      surname: user.sender.surname || undefined,
+      avatar: user.sender.avatar || undefined,
+      platform: user.platform,
+      lastMessageAt: user.lastMessageAt,
+    }));
+
+    return { users: result, total };
   }
 }

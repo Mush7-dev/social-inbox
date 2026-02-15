@@ -4,12 +4,14 @@ import { SocialMessage, SocialMessageSchema } from '../../schemas/social-message
 import { SocialInboxService } from './social-inbox.service';
 import { SocialInboxController } from './social-inbox.controller';
 import { SocialInboxGateway } from './social-inbox.gateway';
+import { SocialPermissionsModule } from '../social-permissions/social-permissions.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: SocialMessage.name, schema: SocialMessageSchema },
     ]),
+    SocialPermissionsModule,
   ],
   providers: [SocialInboxService, SocialInboxGateway],
   controllers: [SocialInboxController],
