@@ -4,38 +4,38 @@ import { SocialPlatform } from '../../../common/enums/social-platform.enum';
 export class ExternalUserResponseDto {
   @ApiProperty({
     description: 'User ID from social platform',
-    example: '1234567890'
+    example: '1234567890',
   })
   id: string;
 
   @ApiPropertyOptional({
     description: 'User first name',
-    example: 'John'
+    example: 'John',
   })
   name?: string;
 
   @ApiPropertyOptional({
     description: 'User surname',
-    example: 'Doe'
+    example: 'Doe',
   })
   surname?: string;
 
   @ApiPropertyOptional({
     description: 'User avatar URL',
-    example: 'https://example.com/avatar.jpg'
+    example: 'https://example.com/avatar.jpg',
   })
   avatar?: string;
 
   @ApiProperty({
     enum: SocialPlatform,
     description: 'Social media platform',
-    example: SocialPlatform.FACEBOOK
+    example: SocialPlatform.FACEBOOK,
   })
   platform: SocialPlatform;
 
   @ApiProperty({
     description: 'Timestamp of last message from this user',
-    example: '2026-02-14T10:30:00.000Z'
+    example: '2026-02-14T10:30:00.000Z',
   })
   lastMessageAt: Date;
 }
@@ -43,13 +43,13 @@ export class ExternalUserResponseDto {
 export class GetExternalUsersResponseDto {
   @ApiProperty({
     type: [ExternalUserResponseDto],
-    description: 'List of external users'
+    description: 'List of external users',
   })
   users: ExternalUserResponseDto[];
 
   @ApiProperty({
     description: 'Total count of users for pagination',
-    example: 150
+    example: 150,
   })
   total: number;
 }
