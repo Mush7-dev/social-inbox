@@ -29,6 +29,12 @@ import {
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { SocialInboxAccessType } from '../../common/enums/social-platform.enum';
+import { UserContext } from './permission-resolver.service';
+import { SocialInboxPermissionDocument } from '../../schemas/social-inbox-permission.schema';
+
+interface AuthenticatedRequest extends Request {
+  user: UserContext;
+}
 
 @ApiTags('Social Permissions')
 @ApiBearerAuth()
@@ -52,9 +58,11 @@ export class SocialPermissionsController {
     status: 404,
     description: 'No individual permissions found for user',
   })
-  async getMyPermissions(@Request() req) {
-    const userId = req.user._id || req.user.id;
-    return this.permissionsService.getMyPermissions(userId);
+  async getMyPermissions(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<SocialInboxPermissionDocument | null> {
+    const userId = req.user._id || req.user.id || '';
+    return await this.permissionsService.getMyPermissions(userId);
   }
 
   @Get('me/effective')
@@ -69,9 +77,9 @@ export class SocialPermissionsController {
     description: 'Effective permissions across all platforms',
   })
   async getMyEffectivePermissions(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ): Promise<EffectivePermissionsResponseDto> {
-    return this.permissionsService.getEffectivePermissions(req.user);
+    return await this.permissionsService.getEffectivePermissions(req.user);
   }
 
   @Get('effective/:userId')
@@ -93,17 +101,16 @@ export class SocialPermissionsController {
   })
   async getEffectivePermissions(
     @Param('userId') userId: string,
-    @Request() req,
   ): Promise<EffectivePermissionsResponseDto> {
     // Note: This requires fetching user details (teams, role) from your CRM
     // For now, we'll just pass the userId and empty arrays
     // You should enhance this to fetch actual user context
-    const userContext = {
+    const userContext: UserContext = {
       _id: userId,
       teamIds: [], // TODO: Fetch from CRM
       userType: '', // TODO: Fetch from CRM
     };
-    return this.permissionsService.getEffectivePermissions(userContext);
+    return await this.permissionsService.getEffectivePermissions(userContext);
   }
 
   @Get()
@@ -124,13 +131,15 @@ export class SocialPermissionsController {
     type: [SocialInboxPermissionResponseDto],
     description: 'List of all permissions',
   })
-  async getAllPermissions(@Query('accessType') accessType?: string) {
+  async getAllPermissions(
+    @Query('accessType') accessType?: string,
+  ): Promise<SocialInboxPermissionDocument[]> {
     if (accessType) {
-      return this.permissionsService.getPermissionsByType(
+      return await this.permissionsService.getPermissionsByType(
         accessType as SocialInboxAccessType,
       );
     }
-    return this.permissionsService.getAllPermissions();
+    return await this.permissionsService.getAllPermissions();
   }
 
   @Get('user/:userId')
@@ -150,8 +159,10 @@ export class SocialPermissionsController {
     description: 'User permissions',
   })
   @ApiResponse({ status: 404, description: 'Permissions not found' })
-  async getUserPermissions(@Param('userId') userId: string) {
-    return this.permissionsService.getUserPermissions(userId);
+  async getUserPermissions(
+    @Param('userId') userId: string,
+  ): Promise<SocialInboxPermissionDocument> {
+    return await this.permissionsService.getUserPermissions(userId);
   }
 
   @Get('team/:teamId')
@@ -170,8 +181,10 @@ export class SocialPermissionsController {
     type: [SocialInboxPermissionResponseDto],
     description: 'Team permissions',
   })
-  async getTeamPermissions(@Param('teamId') teamId: string) {
-    return this.permissionsService.getPermissionsByTargetId(teamId);
+  async getTeamPermissions(
+    @Param('teamId') teamId: string,
+  ): Promise<SocialInboxPermissionDocument[]> {
+    return await this.permissionsService.getPermissionsByTargetId(teamId);
   }
 
   @Get('role/:roleName')
@@ -191,8 +204,10 @@ export class SocialPermissionsController {
     type: [SocialInboxPermissionResponseDto],
     description: 'Role permissions',
   })
-  async getRolePermissions(@Param('roleName') roleName: string) {
-    return this.permissionsService.getPermissionsByTargetId(roleName);
+  async getRolePermissions(
+    @Param('roleName') roleName: string,
+  ): Promise<SocialInboxPermissionDocument[]> {
+    return await this.permissionsService.getPermissionsByTargetId(roleName);
   }
 
   @Post()
@@ -279,10 +294,10 @@ export class SocialPermissionsController {
   })
   async createPermission(
     @Body() dto: CreateSocialInboxPermissionDto,
-    @Request() req,
-  ) {
-    const createdById = req.user._id || req.user.id;
-    return this.permissionsService.createPermission(dto, createdById);
+    @Request() req: AuthenticatedRequest,
+  ): Promise<SocialInboxPermissionDocument> {
+    const createdById = req.user._id || req.user.id || '';
+    return await this.permissionsService.createPermission(dto, createdById);
   }
 
   @Put(':id')
@@ -304,10 +319,10 @@ export class SocialPermissionsController {
   async updatePermission(
     @Param('id') id: string,
     @Body() dto: UpdateSocialInboxPermissionDto,
-    @Request() req,
-  ) {
-    const updatedById = req.user._id || req.user.id;
-    return this.permissionsService.updatePermission(id, dto, updatedById);
+    @Request() req: AuthenticatedRequest,
+  ): Promise<SocialInboxPermissionDocument> {
+    const updatedById = req.user._id || req.user.id || '';
+    return await this.permissionsService.updatePermission(id, dto, updatedById);
   }
 
   @Delete(':id')
@@ -325,8 +340,11 @@ export class SocialPermissionsController {
     description: 'Permission deleted successfully',
   })
   @ApiResponse({ status: 404, description: 'Permission not found' })
-  async deletePermission(@Param('id') id: string, @Request() req) {
-    const deletedById = req.user._id || req.user.id;
+  async deletePermission(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<{ message: string }> {
+    const deletedById = req.user._id || req.user.id || '';
     await this.permissionsService.deletePermission(id, deletedById);
     return { message: 'Permission deleted successfully' };
   }
